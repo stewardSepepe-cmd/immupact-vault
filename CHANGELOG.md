@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.4.0
+- Reads ImmuPact's new document-first PDFs (from November 2026): the signed document comes first and a certificate of completion follows. The Vault finds the document title, identifiers and wording in both the new and the original layout.
+
 ## 0.3.0
 - **Save to Vault from ImmuPact**: the Vault handles `immupact-vault://import` links. It finds the downloaded file in your watch folder, confirms the ImmuPact document ID printed inside the PDF, and asks before adding it. It waits for you to unlock if the vault is locked, and tells you if the document is already stored. Links are treated as untrusted (see docs/SPEC.md section 7).
 

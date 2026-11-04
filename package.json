@@ -1,7 +1,7 @@
 {
   "name": "immupact-vault",
   "productName": "ImmuPact Vault",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "A personal, encrypted document wallet for signed agreements. Keeps your documents on your own device and verifies them directly against the blockchain.",
   "main": "src/main/main.js",
   "license": "Apache-2.0",

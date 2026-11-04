@@ -8,7 +8,7 @@ ImmuPact anchors agreements on the blockchain, but it doesn't keep your final do
 - **It verifies without ImmuPact.** The Vault checks each file directly against the ImmuPact contracts on Sepolia using public RPC endpoints. If ImmuPact went offline, your proof would still work.
 - **It forgets on purpose.** You can give a document or a folder a retention rule, such as "destroy on 3 Nov 2032" or "destroy 6 years after sealing". When the date comes, the file is destroyed and the Vault issues a signed destruction receipt. This is the reverse of the blockchain's immutability: the proof stays on-chain forever, but the document itself doesn't have to.
 
-> Status: **0.3.0 MVP**, desktop (macOS, Windows, Linux). It works, but it hasn't had an independent security audit. Keep another copy of anything important until it has.
+> Status: **0.4.0 MVP**, desktop (macOS, Windows, Linux). It works, but it hasn't had an independent security audit. Keep another copy of anything important until it has.
 
 ## Quick start
 

@@ -50,7 +50,10 @@ function parseIdentifiers(text) {
   const contentHash = pick(new RegExp(`Content Hash:\\s*(${HEX64})`));
   const sealTx = pick(new RegExp(`Seal TX Hash:\\s*(${HEX64})`));
   const title = (() => {
-    // Printed between the "Generated: <date> GMT" line and the "Type: ... | Contract ID" line.
+    // Layout 2 (from Nov 2026): "Document title: <title>" in the certificate of completion.
+    const v2 = t.match(/Document title:\s*(.{1,200}?)\s+Document version\b/);
+    if (v2) return v2[1].replace(/\s+/g, ' ').trim();
+    // Layout 1: printed between the "Generated: <date> GMT" line and the "Type: ... | Contract ID" line.
     const m = t.match(/Generated:[^\n]*?GMT\s+(.{1,200}?)\s+Type:\s*[A-Z_ ]+\s*\|/);
     return m ? m[1].replace(/\s+/g, ' ').trim() : null;
   })();
@@ -64,6 +67,16 @@ function parseIdentifiers(text) {
  */
 function wordingDigest(bodyText) {
   const s = String(bodyText || '').replace(/\s+/g, '');
+  // Layout 2 (from Nov 2026): the document comes first, between the page-1 header line
+  // "Verify at verify.immupact.com/?ref=<id>" and the "SIGNATURES" heading.
+  if (!s.includes('CONTRACTINGPARTIES&SIGNATURES')) {
+    const m = s.match(/verify\.immupact\.com\/\?ref=[0-9a-f]{24}/);
+    if (!m) return null;
+    const rest = s.slice(m.index + m[0].length);
+    const end = rest.indexOf('SIGNATURESSignedelectronicallythroughImmuPact');
+    return end >= 0 ? keccak256(toUtf8Bytes(rest.slice(0, end))) : null;
+  }
+  // Layout 1: parties first, then "CONTRACT CONTENT", then annexures or the audit trail.
   const parties = s.indexOf('CONTRACTINGPARTIES&SIGNATURES');
   const head = s.indexOf('CONTRACTCONTENT', parties >= 0 ? parties : 0);
   if (head < 0) return null;
