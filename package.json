@@ -1,0 +1,79 @@
+{
+  "name": "immupact-vault",
+  "productName": "ImmuPact Vault",
+  "version": "0.2.0",
+  "description": "A personal, encrypted document wallet for signed agreements. Keeps your documents on your own device and verifies them directly against the blockchain.",
+  "main": "src/main/main.js",
+  "license": "Apache-2.0",
+  "author": "ImmuPact Vault contributors",
+  "homepage": "https://immupact.com",
+  "keywords": [
+    "vault",
+    "documents",
+    "encryption",
+    "blockchain",
+    "verification",
+    "electron",
+    "immupact"
+  ],
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test",
+    "check": "node scripts/check.js",
+    "dist": "electron-builder",
+    "dist:mac": "electron-builder --mac",
+    "dist:win": "electron-builder --win",
+    "dist:linux": "electron-builder --linux"
+  },
+  "dependencies": {
+    "@scure/bip39": "1.6.0",
+    "ethers": "6.17.0",
+    "pdf-lib": "1.17.1",
+    "pdfjs-dist": "6.4.299"
+  },
+  "devDependencies": {
+    "electron": "45.2.1",
+    "electron-builder": "26.18.0"
+  },
+  "build": {
+    "appId": "com.immupact.vault",
+    "productName": "ImmuPact Vault",
+    "files": [
+      "src/**/*",
+      "package.json",
+      "LICENSE",
+      "NOTICE"
+    ],
+    "protocols": [
+      {
+        "name": "ImmuPact Vault",
+        "schemes": [
+          "immupact-vault"
+        ]
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        "dmg"
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Office"
+    },
+    "directories": {
+      "buildResources": "build"
+    }
+  }
+}

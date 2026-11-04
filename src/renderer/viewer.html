@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <!-- Read-only viewer. The document arrives decrypted in memory only; this page has no network,
+       no file access, no print or download, and runs no JavaScript from inside documents. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob:; font-src 'self'; connect-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ImmuPact Vault viewer</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="viewer.css" />
+</head>
+<body class="viewer">
+  <header class="vbar">
+    <img class="vlogo" src="assets/logo.png" alt="" />
+    <div class="vtitle"><div id="name" class="vname">Opening…</div><div id="sub" class="small dim"></div></div>
+    <span id="badge" class="badge grey">Checking</span>
+    <span class="spacer"></span>
+    <span id="pages" class="small dim"></span>
+    <button id="zoomOut" title="Zoom out" aria-label="Zoom out">−</button>
+    <button id="fit" title="Fit to width">Fit</button>
+    <button id="zoomIn" title="Zoom in" aria-label="Zoom in">+</button>
+  </header>
+  <div id="verdict" class="vverdict"></div>
+  <main id="stage" class="vstage" tabindex="0" aria-label="Document pages"></main>
+  <footer class="vfoot small dim">Read-only view. Decrypted in memory and wiped when this window closes or the vault locks. To share the file, use "Export original" in the vault.</footer>
+  <script type="module" src="viewer.js"></script>
+</body>
+</html>

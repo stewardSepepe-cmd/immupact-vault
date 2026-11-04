@@ -1,0 +1,11 @@
+node_modules/
+dist/
+out/
+*.log
+.DS_Store
+Thumbs.db
+# Never commit a real vault
+vault.json
+index.enc
+schedule.json
+blobs/

@@ -1,0 +1,16 @@
+ImmuPact Vault
+Copyright 2026 ImmuPact Vault contributors
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+"ImmuPact" is the name of the ImmuPact agreement platform (https://immupact.com).
+The Apache License does not grant permission to use that name or its logos,
+except as needed to describe where this software comes from (see section 6 of
+the License).
+
+This product depends on third-party open-source packages, each under its own
+licence, including:
+  - ethers (MIT)            https://github.com/ethers-io/ethers.js
+  - @scure/bip39 (MIT)      https://github.com/paulmillr/scure-bip39
+  - pdfjs-dist (Apache-2.0) https://github.com/mozilla/pdf.js
+  - Electron (MIT)          https://github.com/electron/electron
