@@ -58,7 +58,7 @@ async function boot(message) {
   ui.settings = s.settings;
   ui.network = s.network;
   if (!s.hasVault) return viewSetup();
-  if (!s.unlocked) return viewUnlock(message);
+  if (!s.unlocked) return viewUnlock(message || (s.handoffPending ? HANDOFF_WAITING : undefined));
   return viewMain();
 }
 
@@ -605,6 +605,59 @@ function openSettings() {
     h('div', { class: 'row' }, h('button', { class: 'primary', onclick: save }, 'Save'), h('button', { onclick: () => close() }, 'Cancel')));
 }
 
+// ───────────────────────────── "Save to Vault" from ImmuPact
+
+const HANDOFF_WAITING = 'ImmuPact asked to save a document to your vault. Unlock to continue.';
+
+function openHandoff(req) {
+  document.querySelectorAll('.modal-backdrop.handoff').forEach((m) => m.remove());
+  const fmtWhen = (iso) => new Date(iso).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  let picked = req.candidates[0]?.path || null;
+  let close = null;
+  const err = h('div', { class: 'error' });
+  const add = async (paths) => {
+    const results = await attempt(() => vault.importPaths(paths, null), err);
+    if (!results) return;
+    close();
+    reportImports(results);
+  };
+  const choose = async () => {
+    const results = await attempt(() => vault.importDialog(null), err);
+    if (results && results.length) { close(); reportImports(results); }
+  };
+  const show = (id) => { close(); ui.selected = id; ui.filter = { kind: 'all' }; ui.query = ''; refresh(); };
+
+  const list = req.candidates.length
+    ? h('div', null, req.candidates.map((c, i) => {
+      const id = `hc${i}`;
+      const radio = h('input', { type: 'radio', name: 'hc', id, style: 'width:auto', checked: i === 0 });
+      radio.addEventListener('change', () => { picked = c.path; });
+      return h('div', { class: 'row logrow' }, radio,
+        h('label', { for: id, style: 'margin:0' },
+          h('div', { class: 'small', style: 'color:var(--text)' }, c.name, c.final ? h('span', { class: 'badge green', style: 'margin-left:6px' }, 'Final') : null),
+          h('div', { class: 'small dim' }, `Saved ${fmtWhen(c.modifiedAt)}`)));
+    }))
+    : h('div', { class: 'note warn' }, `It was not found in ${req.folder}. If you saved or renamed it somewhere else, choose the file.`);
+
+  const back = h('div', { class: 'modal-backdrop handoff' });
+  back.append(h('div', { class: 'modal', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'hoTitle' },
+    h('h2', { id: 'hoTitle' }, 'Save to your vault'),
+    h('p', { class: 'muted' }, 'ImmuPact asked to add a document to this vault. Nothing was sent to the vault: it looked for the file you downloaded and checked that it is the right document.'),
+    req.existing ? h('div', { class: 'note info' },
+      `Already in your vault as "${req.existing.displayName}"${req.existing.anchored ? ', and it is the anchored file' : ''}.`,
+      ' ', h('button', { class: 'link', onclick: () => show(req.existing.id) }, 'Show it')) : null,
+    req.candidates.length ? h('label', null, req.candidates.length === 1 ? 'Found in your Downloads' : 'Found in your Downloads (choose one)') : null,
+    list,
+    req.candidates.length && !req.candidates.some((c) => c.final) ? h('p', { class: 'small dim' }, 'None of these is the -FINAL file. A copy that is not the anchored file is still stored, but will not verify as an exact match.') : null,
+    err,
+    h('div', { class: 'row', style: 'margin-top:16px' },
+      req.candidates.length ? h('button', { class: 'primary', onclick: () => picked && add([picked]) }, 'Add to vault') : null,
+      h('button', { class: req.candidates.length ? '' : 'primary', onclick: choose }, req.candidates.length ? 'Choose a different file…' : 'Choose file…'),
+      h('button', { onclick: () => close() }, 'Cancel'))));
+  document.body.append(back);
+  close = () => back.remove();
+}
+
 // ───────────────────────────── events from the main process
 
 vault.on('vault:locked', ({ reason }) => {
@@ -615,6 +668,13 @@ vault.on('vault:locked', ({ reason }) => {
 vault.on('vault:destroyed', (items) => {
   for (const i of items) toast(`Retention rule: "${i.name}" was destroyed. A signed receipt was kept.`);
   if (ui.snapshot) refresh();
+});
+vault.on('handoff:waiting', () => {
+  if (!document.querySelector('.modal-backdrop.handoff')) viewUnlock(HANDOFF_WAITING);
+});
+vault.on('handoff:request', (req) => {
+  if (!ui.snapshot) { refresh().then(() => openHandoff(req)); return; }
+  openHandoff(req);
 });
 vault.on('watch:found', ({ path, name }) => {
   if (!ui.snapshot) return;

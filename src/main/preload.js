@@ -38,7 +38,7 @@ contextBridge.exposeInMainWorld('vault', {
   openExternal: call('shell:openExternal'),
   pathForFile: (file) => webUtils.getPathForFile(file),
   on: (channel, fn) => {
-    if (!['vault:locked', 'vault:destroyed', 'watch:found'].includes(channel)) return () => {};
+    if (!['vault:locked', 'vault:destroyed', 'watch:found', 'handoff:request', 'handoff:waiting'].includes(channel)) return () => {};
     const listener = (_e, payload) => fn(payload);
     ipcRenderer.on(channel, listener);
     return () => ipcRenderer.removeListener(channel, listener);

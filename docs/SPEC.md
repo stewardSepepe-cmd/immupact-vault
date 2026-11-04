@@ -127,14 +127,31 @@ The receipt payload contains:
 | Copies outside the Vault, or backups made before a destruction | No. This is documented to users. |
 | A weak passphrase | Partly. scrypt slows guessing, and the Vault refuses passphrases under 12 characters. |
 
-## 7. Hand-off from ImmuPact ("Save to Vault")
+## 7. Hand-off from ImmuPact ("Save to Vault", v0.3)
 
-The app registers `immupact-vault://` but ignores it in v0.1. The planned flow:
-1. ImmuPact opens `immupact-vault://import?ref=<contractId>`.
-2. The Vault asks the user to confirm.
-3. The user picks the downloaded file.
+ImmuPact never sends a document to the Vault, and the Vault never fetches one. The flow:
 
-The Vault never fetches documents from ImmuPact. Until this is built, the Downloads watcher picks up new `*-FINAL.pdf` files.
+1. The browser downloads the file as usual.
+2. ImmuPact opens a link that names the document:
+
+```
+immupact-vault://import?v=1&ref=<24-hex ImmuPact document ID>&name=<file name it was saved as>
+```
+
+3. The Vault handles the link:
+   - **macOS** delivers it through `open-url`, even before the app is ready.
+   - **Windows and Linux** pass it in the command line, on first launch or via `second-instance`.
+   - When running from source, `setAsDefaultProtocolClient` registers `process.execPath` plus the script path.
+
+Any website can open such a link, so `src/core/handoff.js` treats it as untrusted:
+- **Validation.** Only the action `import` is accepted. `ref` must be 24 hex characters, or the link is ignored. `name` is kept only if it is a plain file name ending in `.pdf` (no folders, no leading dot, no control characters); otherwise it is dropped and the request continues by ID.
+- **Search.** The Vault only looks in the watch folder (Downloads by default), and only at PDFs modified in the last 30 days whose name equals `name` or contains the first 8 characters of `ref`. It checks at most 20 files, each up to 50 MB.
+- **Confirmation by content.** Each candidate is opened, and it is kept only if the ImmuPact document ID printed inside it equals `ref`. A file name alone never qualifies.
+- **The user decides.** The Vault shows what it found (newest first, `-FINAL` files first), and nothing is imported until the user confirms. The user can also pick another file.
+- **Locked vault.** If the vault is locked, the request waits until it is unlocked.
+- **Duplicates.** If the document is already in the vault, the dialog says so and offers to show it.
+
+ImmuPact can't tell whether the Vault is installed. If the window doesn't lose focus shortly after the link opens, ImmuPact shows a "Get ImmuPact Vault" link.
 
 ## 8. On-disk format versioning
 

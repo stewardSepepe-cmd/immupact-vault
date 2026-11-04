@@ -8,7 +8,7 @@ ImmuPact anchors agreements on the blockchain, but it doesn't keep your final do
 - **It verifies without ImmuPact.** The Vault checks each file directly against the ImmuPact contracts on Sepolia using public RPC endpoints. If ImmuPact went offline, your proof would still work.
 - **It forgets on purpose.** You can give a document or a folder a retention rule, such as "destroy on 3 Nov 2032" or "destroy 6 years after sealing". When the date comes, the file is destroyed and the Vault issues a signed destruction receipt. This is the reverse of the blockchain's immutability: the proof stays on-chain forever, but the document itself doesn't have to.
 
-> Status: **0.2.0 MVP**, desktop (macOS, Windows, Linux). It works, but it hasn't had an independent security audit. Keep another copy of anything important until it has.
+> Status: **0.3.0 MVP**, desktop (macOS, Windows, Linux). It works, but it hasn't had an independent security audit. Keep another copy of anything important until it has.
 
 ## Quick start
 
@@ -45,9 +45,10 @@ npm test
    - **Export original…** saves a byte-for-byte copy. It verifies as the anchored file wherever it goes.
    - **Verification pack…** saves a ZIP with that untouched PDF, a one-page verification sheet, `proof.json` and plain instructions for checking it independently. The proof sits *next to* the PDF, never inside it, because changing the PDF would break the exact match.
    - Each export is recorded in the document's encrypted **Shared copies** log, with an optional note ("Sent to HMRC, case 1234"). You can put the document on legal hold at the same time.
-6. **Name it.** Give any document your own name (for example "Bank letter for mortgage") and private notes. Search covers names, titles and notes. Names never change the file or its proof.
-7. **Set rules.** Retention rules can be set per document or per folder. You can put a legal hold on anything that must not be destroyed.
-8. **Back up.** The Vault copies the encrypted folder anywhere you choose, for example a folder your cloud drive syncs. The copy is useless without your passphrase or recovery phrase.
+6. **Save from ImmuPact.** On an anchored document in ImmuPact, click **Save to Vault**. The Vault opens, finds the file you downloaded, checks inside the PDF that it is the right document, and asks before adding it. Nothing is sent to the Vault. (When running from source on macOS, the `immupact-vault://` link is only registered reliably by a built app: `npm run dist:mac`.)
+7. **Name it.** Give any document your own name (for example "Bank letter for mortgage") and private notes. Search covers names, titles and notes. Names never change the file or its proof.
+8. **Set rules.** Retention rules can be set per document or per folder. You can put a legal hold on anything that must not be destroyed.
+9. **Back up.** The Vault copies the encrypted folder anywhere you choose, for example a folder your cloud drive syncs. The copy is useless without your passphrase or recovery phrase.
 
 The Vault locks automatically after 10 minutes of inactivity (you can change this), and whenever the computer sleeps or the screen locks.
 
@@ -80,7 +81,6 @@ The full design is in [docs/SPEC.md](docs/SPEC.md).
 ## Roadmap
 
 - Text selection and search inside the viewer.
-- "Save to Vault" button in ImmuPact, using the reserved `immupact-vault://` link scheme. The app already registers it, but it doesn't handle it yet. Until then, the Downloads watcher does this job.
 - Mobile companion (read-only, with the same format and keys).
 - Hardware-key unlock (WebAuthn / FIDO2).
 - Encrypted sync between your own devices.

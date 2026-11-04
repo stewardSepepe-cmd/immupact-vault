@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.3.0
+- **Save to Vault from ImmuPact**: the Vault handles `immupact-vault://import` links. It finds the downloaded file in your watch folder, confirms the ImmuPact document ID printed inside the PDF, and asks before adding it. It waits for you to unlock if the vault is locked, and tells you if the document is already stored. Links are treated as untrusted (see docs/SPEC.md section 7).
+
 ## 0.2.0
 - **Viewer**: read documents inside the vault. Decrypted in memory only, in a locked-down window that closes when the vault locks. Optional screenshot protection.
 - **Export original**: the byte-for-byte file for sharing, with a clear warning, an optional note and an optional legal hold.

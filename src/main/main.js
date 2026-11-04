@@ -11,6 +11,8 @@ const { importFile, recheck } = require('../core/importer');
 const { onlineWordingCheck } = require('../core/verify');
 const { buildPack } = require('../core/pack');
 const { safeFileName } = require('../core/naming');
+const { parseHandoffUrl, handoffFromArgv, findHandoffFile } = require('../core/handoff');
+const { inspectPdf } = require('../core/pdf');
 const { NETWORKS } = require('../core/standard');
 const { Settings } = require('./settings');
 
@@ -25,7 +27,14 @@ const RETENTION_EVERY_MS = 10 * 60 * 1000;
 
 // One running copy only (also routes immupact-vault:// links to it).
 if (!app.requestSingleInstanceLock()) app.quit();
-app.setAsDefaultProtocolClient('immupact-vault');
+// "Save to Vault" links from ImmuPact. When running from source (npm start) the handler must point
+// at this script; packaged builds register the scheme from package.json.
+if (process.defaultApp && process.argv.length >= 2) {
+  app.setAsDefaultProtocolClient('immupact-vault', process.execPath, [path.resolve(process.argv[1])]);
+} else {
+  app.setAsDefaultProtocolClient('immupact-vault');
+}
+let pendingHandoff = handoffFromArgv(process.argv); // Windows/Linux pass the link on first launch
 
 function send(channel, payload) {
   if (win && !win.isDestroyed()) win.webContents.send(channel, payload);
@@ -57,6 +66,37 @@ function requireVault() {
   if (!vault || !vault.isOpen) throw new Error('The vault is locked.');
   touch();
   return vault;
+}
+
+// ───────────────────────────── "Save to Vault" hand-off
+
+function receiveHandoff(req) {
+  if (!req) return;
+  pendingHandoff = req;
+  if (win) { if (win.isMinimized()) win.restore(); win.focus(); }
+  deliverHandoff();
+}
+
+/** Shows the pending request once the window is ready and the vault is unlocked. */
+async function deliverHandoff() {
+  const req = pendingHandoff;
+  if (!req || !win || win.isDestroyed() || win.webContents.isLoading()) return;
+  if (!vault || !vault.isOpen) { send('handoff:waiting', {}); return; }
+  pendingHandoff = null;
+  const dir = settings.get('watchDir') || app.getPath('downloads');
+  let candidates = [];
+  try { candidates = await findHandoffFile(dir, req, { inspect: inspectPdf }); } catch { candidates = []; }
+  // Already in the vault? Then just show it.
+  const docs = vault.list();
+  const existing = docs.find((d) => !d.destroyedAt && d.ids?.contractId === req.ref && d.verification?.verdict === 'anchored')
+    || docs.find((d) => !d.destroyedAt && d.ids?.contractId === req.ref);
+  send('handoff:request', {
+    ref: req.ref,
+    name: req.name,
+    folder: dir,
+    existing: existing ? { id: existing.id, displayName: existing.displayName, anchored: existing.verification?.verdict === 'anchored' } : null,
+    candidates: candidates.slice(0, 5).map((c) => ({ path: c.path, name: c.name, modifiedAt: c.modifiedAt, final: c.final, size: c.size })),
+  });
 }
 
 // ───────────────────────────── retention
@@ -116,6 +156,7 @@ function snapshot() {
 
 function registerIpc() {
   handle('app:state', () => ({
+    handoffPending: !!pendingHandoff,
     vaultDir: settings.get('vaultDir'),
     hasVault: !!settings.get('vaultDir') && Vault.exists(settings.get('vaultDir')),
     unlocked: !!(vault && vault.isOpen),
@@ -153,6 +194,7 @@ function registerIpc() {
     vault = Vault.open(settings.get('vaultDir'), passphrase);
     touch();
     runRetention();
+    setTimeout(deliverHandoff, 400); // a "Save to Vault" request that arrived while locked
     return true;
   });
 
@@ -160,6 +202,7 @@ function registerIpc() {
     vault = Vault.recover(settings.get('vaultDir'), phrase, newPassphrase);
     touch();
     runRetention();
+    setTimeout(deliverHandoff, 400);
     return true;
   });
 
@@ -368,6 +411,7 @@ function createWindow() {
   });
   win.removeMenu();
   win.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
+  win.webContents.on('did-finish-load', () => setTimeout(deliverHandoff, 300));
   // The window never navigates anywhere or opens other windows.
   win.webContents.on('will-navigate', (e) => e.preventDefault());
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
@@ -375,10 +419,12 @@ function createWindow() {
   win.on('closed', () => { win = null; lockVault('closed'); app.quit(); });
 }
 
-app.on('second-instance', () => {
+app.on('second-instance', (_e, argv) => {
   if (win) { if (win.isMinimized()) win.restore(); win.focus(); }
+  receiveHandoff(handoffFromArgv(argv));
 });
-app.on('open-url', (e) => { e.preventDefault(); if (win) win.focus(); }); // immupact-vault:// hand-off (reserved)
+// macOS delivers immupact-vault:// links here (also before the app is ready).
+app.on('open-url', (e, url) => { e.preventDefault(); receiveHandoff(parseHandoffUrl(url)); });
 
 app.whenReady().then(() => {
   settings = new Settings(app.getPath('userData'));
